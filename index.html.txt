@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>User App</title>
+</head>
+<body>
+
+<h2>Add / Edit User</h2>
+<input id="name" placeholder="Name">
+<input id="email" placeholder="Email">
+<button onclick="saveUser()">Save</button>
+
+<h2>User List</h2>
+<ul id="list"></ul>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyK-mvjzvQklMkM8yIEzz6f3RWUtz7k032zfksUrJWoCWZgu4AGcMCpNVQK7OqKzyTlRw/exec";
+
+let editId = null;
+
+// SAVE (Add + Edit)
+function saveUser() {
+  const name = document.getElementById("name").value.trim();
+  const email = document.getElementById("email").value.trim();
+
+  if (!name || !email) {
+    alert("Fill all fields");
+    return;
+  }
+
+  const action = editId ? "edit" : "add";
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ action, id: editId, name, email }),
+    headers: {
+      "Content-Type": "application/json"
+    }
+  })
+  .then(res => res.json())
+  .then(() => {
+    document.getElementById("name").value = "";
+    document.getElementById("email").value = "";
+    editId = null;
+    loadUsers();
+  });
+}
+
+
+// LOAD USERS
+function loadUsers() {
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      const list = document.getElementById("list");
+      list.innerHTML = "";
+
+      data.forEach(user => {
+        const li = document.createElement("li");
+
+        li.innerHTML = `
+          ${user.name} - ${user.email}
+          <button onclick="editUser(${user.id}, '${user.name}', '${user.email}')">Edit</button>
+          <button onclick="deleteUser(${user.id})">Delete</button>
+        `;
+
+        list.appendChild(li);
+      });
+    });
+}
+
+
+// DELETE
+function deleteUser(id) {
+  if (!confirm("Delete this user?")) return;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "delete", id }),
+    headers: {
+      "Content-Type": "application/json"
+    }
+  })
+  .then(res => res.json())
+  .then(() => loadUsers());
+}
+
+
+// EDIT
+function editUser(id, name, email) {
+  document.getElementById("name").value = name;
+  document.getElementById("email").value = email;
+  editId = id;
+}
+
+
+// INIT
+loadUsers();
+</script>
+
+</body>
+</html>
